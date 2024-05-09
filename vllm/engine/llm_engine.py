@@ -10,6 +10,7 @@ from vllm.config import (CacheConfig, DecodingConfig, DeviceConfig, LoadConfig,
                          VisionLanguageConfig)
 from vllm.core.scheduler import (ScheduledSequenceGroup, Scheduler,
                                  SchedulerOutputs)
+from vllm.core.andes_scheduler import AndesScheduler
 from vllm.engine.arg_utils import EngineArgs
 from vllm.engine.metrics import StatLogger, Stats
 from vllm.engine.output_processor.interfaces import (
@@ -144,6 +145,7 @@ class LLMEngine:
         self.load_config = load_config
         self.decoding_config = decoding_config or DecodingConfig()
         self.log_stats = log_stats
+        self.scheduling_strategy = self.scheduler_config.scheduling_strategy
 
         if not self.model_config.skip_tokenizer_init:
             self.tokenizer: BaseTokenizerGroup
@@ -214,7 +216,10 @@ class LLMEngine:
         # Create the scheduler.
         # NOTE: the cache_config here have been updated with the numbers of
         # GPU and CPU blocks, which are profiled in the distributed executor.
-        self.scheduler = Scheduler(scheduler_config, cache_config, lora_config)
+        if self.scheduling_strategy == "qoe":
+            self.scheduler = AndesScheduler(scheduler_config, cache_config, lora_config)
+        elif self.scheduling_strategy == "fcfs":
+            self.scheduler = Scheduler(scheduler_config, cache_config, lora_config)
 
         # Metric Logging.
         if self.log_stats:
@@ -359,6 +364,7 @@ class LLMEngine:
         arrival_time: Optional[float] = None,
         lora_request: Optional[LoRARequest] = None,
         multi_modal_data: Optional[MultiModalData] = None,
+        qoe_required: Optional[dict] = None,
     ) -> None:
         """Add a request to the engine's request pool.
 
@@ -430,7 +436,9 @@ class LLMEngine:
             logger.warning("Use None for EOS token id because tokenizer is "
                            "not initialized")
         seq = Sequence(seq_id, prompt, prompt_token_ids, block_size,
-                       eos_token_id, lora_request)
+                       eos_token_id, lora_request, self.scheduling_strategy, 
+                       qoe_required=qoe_required if qoe_required else None)
+
 
         # Defensive copy of SamplingParams, which are used by the sampler,
         # this doesn't deep-copy LogitsProcessor objects

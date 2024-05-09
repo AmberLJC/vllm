@@ -3,6 +3,7 @@ import copy
 import enum
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
+import time
 
 from vllm.block import LogicalTokenBlock
 from vllm.lora.request import LoRARequest
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
     from vllm.spec_decode.metrics import SpecDecodeWorkerMetrics
 
+from vllm.core.andes_utils.qoe_tracker import ServiceTracker, QoETracker
 
 @dataclass
 class Logprob:
@@ -211,6 +213,8 @@ class Sequence:
         block_size: int,
         eos_token_id: Optional[int] = None,
         lora_request: Optional[LoRARequest] = None,
+        scheduling_strategy: str = 'fcfs',
+        qoe_required: Optional[Dict[str, float]] = None,
     ) -> None:
         self.seq_id = seq_id
         self.prompt = prompt
@@ -233,6 +237,15 @@ class Sequence:
         self.read_offset = 0
         # Input + output tokens
         self.tokens: Optional[List[str]] = None
+        self.arrival_time = time.monotonic()
+
+        self.qoe_required = {'ttft': 1.0, 'latency': 0.2, 'ttlt': float('inf')} if not qoe_required else qoe_required
+        # TODO: add qoe_tracker, and set as optional
+        if scheduling_strategy == 'qoe':
+            self.request_tracker = QoETracker(self.qoe_required, self.get_prompt_len())
+        elif scheduling_strategy == 'fcfs':
+            self.request_tracker = ServiceTracker()
+        
 
     @property
     def lora_int_id(self) -> int:
@@ -293,6 +306,7 @@ class Sequence:
         self._append_tokens_to_blocks([token_id])
         self.output_logprobs.append(logprobs)
         self.data.append_token_id(token_id, logprobs[token_id].logprob)
+        self.request_tracker.add(time.monotonic() - self.arrival_time)
 
     def get_len(self) -> int:
         return self.data.get_len()
@@ -364,6 +378,9 @@ class Sequence:
                 f"status={self.status.name}, "
                 f"num_blocks={len(self.logical_token_blocks)})")
 
+    def get_value(self, now: float, token_latency: float, delta_t: float, running: bool = None) -> float:
+        return self.request_tracker.get_value(now - self.arrival_time, token_latency, delta_t, running)
+    
 
 @dataclass
 class SequenceGroupState:
@@ -563,6 +580,15 @@ class SequenceGroup:
                 f"sampling_params={self.sampling_params}, "
                 f"num_seqs={len(self.seqs_dict)})")
 
+    def get_len(self) -> int:
+        return sum([seq.get_len() for seq in self.get_seqs()])
+
+    def get_value(self, now: float, token_latency: float, delta_t: float, running: bool = None) -> float:
+        return max([seq.get_value(now, token_latency, delta_t, running) for seq in self.get_seqs()])
+
+    def preempt_signal(self) -> None:
+        for seq in self.get_seqs():
+            seq.request_tracker.preempt_signal()
 
 class SequenceGroupMetadata:
     """Metadata for a sequence group. Used to create `AttentionMetadata`.

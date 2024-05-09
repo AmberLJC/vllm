@@ -256,6 +256,7 @@ class _AsyncLLMEngine(LLMEngine):
         arrival_time: Optional[float] = None,
         lora_request: Optional[LoRARequest] = None,
         multi_modal_data: Optional[MultiModalData] = None,
+        qoe_required: Optional[Dict[str, float]] = None,
     ) -> None:
         if lora_request is not None and not self.lora_config:
             raise ValueError(f"Got lora_request {lora_request} but LoRA is "
@@ -274,7 +275,8 @@ class _AsyncLLMEngine(LLMEngine):
                                 sampling_params=sampling_params,
                                 arrival_time=arrival_time,
                                 lora_request=lora_request,
-                                multi_modal_data=multi_modal_data)
+                                multi_modal_data=multi_modal_data,
+                                qoe_required=qoe_required)
 
     async def check_health_async(self) -> None:
         self.model_executor.check_health()
