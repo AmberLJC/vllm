@@ -35,23 +35,13 @@ class QoETracker(ServiceTracker):
         self.preemption_times = 0
             
     def add(self, time_stamp):   
-        self.token_timestamp.append(time_stamp)
-
-    # def get_buffer_size(self, time_stamp):
-    #     return max(0, self.buffer_size - (time_stamp - self.last_time) * self.display_rate)
-
+        self.token_timestamp.append(time_stamp) 
+    
     def preempt_signal(self):
         self.preemption_times += 1
-
-    # def activate_status(self, time_stamp: float) :
-    #     self.last_activate_time = time_stamp
- 
-    # def get_priority(self, cur_time: float, running: bool = None) -> float:
-    #     buffer_size = len(self.token_timestamp) - self.display_rate * cur_time 
-    #     return -buffer_size
         
     def get_value(self, cur_time: float, token_latency: float, delta_t: float, running: bool = True) -> float:
-        return 10 if self.preemption_times and running or len(self.token_timestamp) > 500 \
+        return 10 if (self.preemption_times and running) or len(self.token_timestamp) > 500 \
                  else self.obj_func.get_value(self.token_timestamp, cur_time, token_latency, delta_t, running)
     
     def get_QoE(self, token_timestamp: tuple = None, buffer_size_list: tuple = None, predict: bool = False) -> float:
@@ -108,7 +98,7 @@ class QoEOptimizer():
         pass
                       
 
-    def cal_qoe_preempt(self, token_timestamp, cur_time: float,  delta_t: float = None) -> float:
+    def cal_qoe_preempt(self, token_timestamp, cur_time: float,  delta_t: float) -> float:
         pass
 
     def get_value(self, token_timestamp, cur_time: float, token_latency: float, delta_t: float, running: bool = True ) -> float:
@@ -130,7 +120,7 @@ class AvgQoEOptimizer(QoEOptimizer):
         actual_response_len = len(token_timestamp) + delta_t / token_latency
         return 1 - ((expected_response_len - actual_response_len) / expected_response_len) ** 2
  
-    def cal_qoe_preempt(self, token_timestamp, cur_time: float,  delta_t: float = None) -> float:
+    def cal_qoe_preempt(self, token_timestamp, cur_time: float,  delta_t: float) -> float:
         # delta_t = self.delta_t if delta_t is None else delta_t 
         if len(token_timestamp) == 0:
             return cur_time + delta_t <= self.qoe_required['ttft']  

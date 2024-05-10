@@ -138,7 +138,7 @@ class AndesScheduler(Scheduler):
         leftover_waiting_sequences: Deque[SequenceGroup] = deque()
         admitted_seq: List[ScheduledSequenceGroup] = []
 
-        while seq_to_admit and self._passed_delay(time.time()) :
+        while seq_to_admit: # and self._passed_delay(time.time()) :
             seq_group = seq_to_admit[0]
             waiting_seqs = seq_group.get_seqs(status=SequenceStatus.WAITING)
             assert len(waiting_seqs) == 1, (
