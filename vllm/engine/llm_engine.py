@@ -365,6 +365,7 @@ class LLMEngine:
         lora_request: Optional[LoRARequest] = None,
         multi_modal_data: Optional[MultiModalData] = None,
         qoe_required: Optional[dict] = None,
+        output_length: Optional[int] = None,
     ) -> None:
         """Add a request to the engine's request pool.
 
@@ -437,7 +438,7 @@ class LLMEngine:
                            "not initialized")
         seq = Sequence(seq_id, prompt, prompt_token_ids, block_size,
                        eos_token_id, lora_request, self.scheduling_strategy, 
-                       qoe_required=qoe_required if qoe_required else None)
+                       qoe_required=qoe_required if qoe_required else None, output_len=output_length if output_length else None)
 
 
         # Defensive copy of SamplingParams, which are used by the sampler,

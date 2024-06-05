@@ -215,6 +215,8 @@ class Sequence:
         lora_request: Optional[LoRARequest] = None,
         scheduling_strategy: str = 'fcfs',
         qoe_required: Optional[Dict[str, float]] = None,
+        # add output length
+        output_len: int = 0,
     ) -> None:
         self.seq_id = seq_id
         self.prompt = prompt
@@ -240,6 +242,10 @@ class Sequence:
         self.arrival_time = time.monotonic()
 
         self.qoe_required = {'ttft': 1.0, 'latency': 0.2, 'ttlt': float('inf')} if not qoe_required else qoe_required
+
+        # add output length
+        self.target_output_len = output_len
+
         # TODO: add qoe_tracker, and set as optional
         if scheduling_strategy == 'qoe':
             self.request_tracker = QoETracker(self.qoe_required, self.get_prompt_len())

@@ -27,6 +27,12 @@ class StopChecker:
            sequence's output text for the newly generated token
         """
 
+        # if the sequence's output length reaches target length, stop it
+        if seq.target_output_len is not None:
+            if seq.get_output_len() == seq.target_output_len:
+                seq.status = SequenceStatus.FINISHED_STOPPED
+                return
+
         # Check if the minimum number of tokens has been generated yet;
         # skip the stop string/token checks if not
         if seq.get_output_len() < sampling_params.min_tokens:
