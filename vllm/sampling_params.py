@@ -130,6 +130,7 @@ class SamplingParams:
         logits_processors: Optional[List[LogitsProcessor]] = None,
         truncate_prompt_tokens: Optional[Annotated[int, Field(ge=1)]] = None,
         qoe: Optional[Dict[str, Any]] = None,
+        output_len: Optional[int] = None,
     ) -> None:
         self.n = n
         self.best_of = best_of if best_of is not None else n
@@ -163,6 +164,7 @@ class SamplingParams:
         self.logprobs = logprobs
         self.prompt_logprobs = prompt_logprobs
         self.qoe_required = qoe
+        self.output_len = output_len
         # NOTE: This parameter is only exposed at the engine level for now.
         # It is not exposed in the OpenAI API server, as the OpenAI API does
         # not support returning only a list of token IDs.
