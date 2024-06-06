@@ -4,8 +4,8 @@ from transformers import PreTrainedTokenizer
 
 from vllm.sampling_params import SamplingParams
 from vllm.sequence import Sequence, SequenceStatus
-
-
+from vllm.logger import init_logger
+logger = init_logger(__name__)
 class StopChecker:
     """LLMEngine helper class which separates out the logic involving stop
     checking. This checks things such as: whether the eos token was emitted,
@@ -29,9 +29,20 @@ class StopChecker:
 
         # if the sequence's output length reaches target length, stop it
         if seq.target_output_len is not None:
+            # Check if the sequence has reached max_model_len.
+            if seq.get_len() > self.max_model_len:
+                seq.status = SequenceStatus.FINISHED_LENGTH_CAPPED
+                return
+
+            # Check if the sequence has reached max_tokens.
+            if seq.get_output_len() == sampling_params.max_tokens:
+                seq.status = SequenceStatus.FINISHED_LENGTH_CAPPED
+                return
+            
             if seq.get_output_len() == seq.target_output_len:
                 seq.status = SequenceStatus.FINISHED_STOPPED
                 return
+            return
 
         # Check if the minimum number of tokens has been generated yet;
         # skip the stop string/token checks if not

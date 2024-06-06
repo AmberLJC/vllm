@@ -257,7 +257,7 @@ class _AsyncLLMEngine(LLMEngine):
         lora_request: Optional[LoRARequest] = None,
         multi_modal_data: Optional[MultiModalData] = None,
         qoe_required: Optional[Dict[str, float]] = None,
-        output_length: Optional[int] = None,
+        output_len: Optional[int] = None,
     ) -> None:
         if lora_request is not None and not self.lora_config:
             raise ValueError(f"Got lora_request {lora_request} but LoRA is "
@@ -278,7 +278,7 @@ class _AsyncLLMEngine(LLMEngine):
                                 lora_request=lora_request,
                                 multi_modal_data=multi_modal_data,
                                 qoe_required=qoe_required,
-                                output_length=output_length)
+                                output_len=output_len)
 
     async def check_health_async(self) -> None:
         self.model_executor.check_health()
@@ -457,6 +457,7 @@ class AsyncLLMEngine:
             # Add the request into the vLLM engine's waiting queue.
             # TODO: Maybe add add_request_batch to reduce Ray overhead
             try:
+                logger.info("engine_use_ray: %s", self.engine_use_ray)
                 if self.engine_use_ray:
                     await self.engine.add_request.remote(  # type: ignore
                         **new_request)
@@ -520,6 +521,8 @@ class AsyncLLMEngine:
         arrival_time: Optional[float] = None,
         lora_request: Optional[LoRARequest] = None,
         multi_modal_data: Optional[MultiModalData] = None,
+        qoe_required: Optional[Dict[str, float]] = None,
+        output_len: Optional[int] = None,
     ) -> AsyncStream:
         if self.log_requests:
             shortened_prompt = prompt
@@ -571,6 +574,8 @@ class AsyncLLMEngine:
             arrival_time=arrival_time,
             lora_request=lora_request,
             multi_modal_data=multi_modal_data,
+            qoe_required=qoe_required,
+            output_len=output_len,
         )
 
         return stream
@@ -582,7 +587,9 @@ class AsyncLLMEngine:
         request_id: str,
         prompt_token_ids: Optional[List[int]] = None,
         lora_request: Optional[LoRARequest] = None,
-        multi_modal_data: Optional[MultiModalData] = None
+        multi_modal_data: Optional[MultiModalData] = None,
+        qoe_required: Optional[Dict[str, float]] = None,
+        output_len: Optional[int] = None
     ) -> AsyncIterator[RequestOutput]:
         """Generate outputs for a request.
 
@@ -659,6 +666,8 @@ class AsyncLLMEngine:
                 arrival_time=arrival_time,
                 lora_request=lora_request,
                 multi_modal_data=multi_modal_data,
+                qoe_required=qoe_required,
+                output_len=output_len,
             )
 
             async for request_output in stream:

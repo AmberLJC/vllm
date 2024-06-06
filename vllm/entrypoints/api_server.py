@@ -44,11 +44,15 @@ async def generate(request: Request) -> Response:
     request_dict = await request.json()
     prompt = request_dict.pop("prompt")
     stream = request_dict.pop("stream", False)
+    qoe = request_dict.pop("qoe", False)
+    output_len = request_dict.pop("output_len", None)
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
 
     assert engine is not None
-    results_generator = engine.generate(prompt, sampling_params, request_id)
+    results_generator = engine.generate(prompt, sampling_params, request_id,
+                                        qoe_required=qoe,
+                                        output_len=output_len)
 
     # Streaming case
     async def stream_results() -> AsyncGenerator[bytes, None]:

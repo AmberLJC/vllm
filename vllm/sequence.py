@@ -8,6 +8,9 @@ import time
 from vllm.block import LogicalTokenBlock
 from vllm.lora.request import LoRARequest
 from vllm.sampling_params import SamplingParams
+from vllm.logger import init_logger
+
+logger = init_logger(__name__)
 
 if TYPE_CHECKING:
     import torch
@@ -216,7 +219,7 @@ class Sequence:
         scheduling_strategy: str = 'fcfs',
         qoe_required: Optional[Dict[str, float]] = None,
         # add output length
-        output_len: int = 0,
+        output_len: Optional[int] = None,
     ) -> None:
         self.seq_id = seq_id
         self.prompt = prompt
@@ -242,6 +245,7 @@ class Sequence:
         self.arrival_time = time.monotonic()
 
         self.qoe_required = {'ttft': 1.0, 'latency': 0.2, 'ttlt': float('inf')} if not qoe_required else qoe_required
+        logger.info(f"QoE required: {self.qoe_required}")
 
         # add output length
         self.target_output_len = output_len
