@@ -457,7 +457,6 @@ class AsyncLLMEngine:
             # Add the request into the vLLM engine's waiting queue.
             # TODO: Maybe add add_request_batch to reduce Ray overhead
             try:
-                logger.info("engine_use_ray: %s", self.engine_use_ray)
                 if self.engine_use_ray:
                     await self.engine.add_request.remote(  # type: ignore
                         **new_request)

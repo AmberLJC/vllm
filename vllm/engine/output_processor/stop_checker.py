@@ -4,8 +4,7 @@ from transformers import PreTrainedTokenizer
 
 from vllm.sampling_params import SamplingParams
 from vllm.sequence import Sequence, SequenceStatus
-from vllm.logger import init_logger
-logger = init_logger(__name__)
+
 class StopChecker:
     """LLMEngine helper class which separates out the logic involving stop
     checking. This checks things such as: whether the eos token was emitted,
