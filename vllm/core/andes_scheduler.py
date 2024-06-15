@@ -44,7 +44,7 @@ class AndesScheduler(Scheduler):
         latency_function = None
         
         seq_to_admit, seq_to_swap_in, seq_to_evict = self.schedule_solver.schedule_requests(budget, self.running, self.waiting, self.swapped, utilization, latency_function)
-        logger.info("Admitting %d, swapping in %d, evicting %d", len(seq_to_admit), len(seq_to_swap_in), len(seq_to_evict))
+        logger.info("Admitting %d, swapping in %d, evicting %d, Running %d, waiting %d, swapped %d", len(seq_to_admit), len(seq_to_swap_in), len(seq_to_evict), len(self.running), len(self.waiting), len(self.swapped))
         
         blocks_to_swap_out: Dict[int, int] = {}
         blocks_to_copy: Dict[int, List[int]] = {}

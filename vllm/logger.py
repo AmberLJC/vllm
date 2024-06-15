@@ -1,4 +1,3 @@
-"""Logging configuration for vLLM."""
 import datetime
 import json
 import logging
@@ -27,16 +26,23 @@ DEFAULT_LOGGING_CONFIG = {
         },
     },
     "handlers": {
-        "vllm": {
+        "vllm_stream": {
             "class": "logging.StreamHandler",
             "formatter": "vllm",
             "level": "INFO",
             "stream": "ext://sys.stdout",
         },
+        "vllm_file": {
+            "class": "logging.FileHandler",
+            "formatter": "vllm",
+            "level": "INFO",
+            "filename": f'logs/vllm-{datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}.log',
+            "mode": "a",
+        },
     },
     "loggers": {
         "vllm": {
-            "handlers": ["vllm"],
+            "handlers": ["vllm_stream", "vllm_file"],
             "level": "DEBUG",
             "propagate": False,
         },
